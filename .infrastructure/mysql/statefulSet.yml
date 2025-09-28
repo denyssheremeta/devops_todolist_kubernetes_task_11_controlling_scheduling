@@ -18,11 +18,11 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - mysql
+              - matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - mysql
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
@@ -31,8 +31,7 @@ spec:
                     operator: In
                     values:
                       - mysql
-              topologyKey: "kubernetes.io/hostname"
-
+              topologyKey: kubernetes.io/hostname
       tolerations:
         - key: "app"
           operator: "Equal"
