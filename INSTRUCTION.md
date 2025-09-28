@@ -1,30 +1,77 @@
-### Node Affinity for StatefulSet Check
+# Validation Guide
 
+# Prerequisites
+
+# - Docker, kind, kubectl installed
+
+# - Repo forked and cloned locally
+
+# 1) Create cluster
+
+```
+kind create cluster --config=cluster.yml
+```
+
+# (або використати ./bootstrap.sh який робить create + label + taint + apply)
+
+# 2) Label & Taint nodes
+
+```
+kubectl get nodes
+```
+
+# Приклад:
+
+```
+kubectl label nodes <todo-node> app=todoapp --overwrite
+kubectl label nodes <mysql-node> app=mysql --overwrite
+kubectl taint nodes <mysql-node> app=mysql:NoSchedule --overwrite
+```
+
+# 3) Deploy resources
+
+```
+./bootstrap.sh
+```
+
+# 4) Validate
+
+# Nodes / Labels / Taints
+
+```
 kubectl get nodes --show-labels
-kubectl get pods -n mysql -o wide
+kubectl describe node <mysql-node> | grep -i Taints
+```
 
-### Pod Anti-Affinity for StatefulSet Check
+# Очікуємо: app=mysql:NoSchedule
 
-kubectl scale statefulset mysql --replicas=2 -n mysql
-kubectl get pods -n mysql -o wide (should be on different nodes)
+# StatefulSet (MySQL): NodeAffinity + Tolerations + Pod Anti-Affinity
 
-### Toleration check
+```
+kubectl -n mysql get pods -o wide
+kubectl -n mysql scale statefulset mysql --replicas=2
+kubectl -n mysql get pods -o wide
+```
 
-kubectl describe node <node_name>
-expect:
-Taints: app=mysql:NoSchedule
+# Репліки мають бути на різних нодах (podAntiAffinity)
 
-kubectl describe pod mysql-0 -n mysql
+# Deployment (ToDo app): Preferred Node Affinity + Pod Anti-Affinity
 
-### Deployment: Node Affinity (preferred)
+```
+kubectl get nodes --show-labels | grep app=todoapp
+kubectl -n todoapp get pods -o wide
+kubectl -n todoapp scale deployment todoapp --replicas=2
+kubectl -n todoapp get pods -o wide
+```
 
-kubectl get nodes --show-labels
-(looking for app=todoapp)
+# Має розкидати поди на різні ноди (required podAntiAffinity)
 
-kubectl get pods -n todoapp -o wide
+# і надавати перевагу нодам з app=todoapp (preferredDuringScheduling...)
 
-### Deployment: Pod Anti-Affinity
+# Ingress (опціонально)
 
-kubectl scale deployment todoapp --replicas=2 -n todoapp
-kubectl get pods -n todoapp -o wide
-(should be on different nodes)
+```
+kubectl -n ingress-nginx get pods
+```
+
+# Перевірте, що ingress-nginx-controller Ready
